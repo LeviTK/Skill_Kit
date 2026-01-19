@@ -1,0 +1,12 @@
+# Build output
+bin/
+skillkit
+sk
+
+# OS files
+.DS_Store
+
+# IDE
+.idea/
+*.swp
+*.swo

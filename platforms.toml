@@ -1,0 +1,61 @@
+# Linktrack Platform Registry
+# 平台注册表：定义各 AI 工具的技能/代理目录路径
+
+[platforms.claude]
+name = "Claude Code"
+project = ".claude/"
+global = "~/.claude/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.copilot]
+name = "GitHub Copilot"
+project = ".github/"
+global = "~/.copilot/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.antigravity]
+name = "Google Antigravity"
+project = ".agent/"
+global = "~/.gemini/antigravity/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.cursor]
+name = "Cursor"
+project = ".cursor/"
+global = "~/.cursor/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.opencode]
+name = "OpenCode"
+project = ".opencode/"
+global = "~/.config/opencode/"
+skill_dir = "skill"
+agent_dir = "agent"
+
+[platforms.codex]
+name = "OpenAI Codex"
+project = ".codex/"
+global = "~/.codex/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.gemini]
+name = "Gemini CLI"
+project = ".gemini/"
+global = "~/.gemini/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.windsurf]
+name = "Windsurf"
+project = ".windsurf/"
+global = "~/.codeium/windsurf/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+# 默认同步平台列表（按 key 填写）
+default_platforms = ["claude", "cursor"]
