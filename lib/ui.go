@@ -19,11 +19,11 @@ const (
 // ShowBanner 显示品牌横幅
 func ShowBanner() {
 	banner := `
-` + ColorCyan + `  _     _       _   _                  _    ` + ColorReset + `
-` + ColorCyan + ` | |   (_)_ __ | | |_ _ __ __ _  ___| | __` + ColorReset + `
-` + ColorCyan + ` | |   | | '_ \| |/ / '__/ _` + "`" + ` |/ __| |/ /` + ColorReset + `
-` + ColorCyan + ` | |___| | | | |   <| | | (_| | (__|   < ` + ColorReset + `
-` + ColorCyan + ` |_____|_|_| |_|_|\_\_|  \__,_|\___|_|\_\` + ColorReset + `
+` + ColorCyan + `  ____  _    _ _ _   _  ___ _   ` + ColorReset + `
+` + ColorCyan + ` / ___|| | _(_) | | | |/ (_) |_ ` + ColorReset + `
+` + ColorCyan + ` \___ \| |/ / | | | | ' /| | __|` + ColorReset + `
+` + ColorCyan + `  ___) |   <| | | | | . \| | |_ ` + ColorReset + `
+` + ColorCyan + ` |____/|_|\_\_|_|_| |_|\_\_|\__|` + ColorReset + `
 `
 	fmt.Print(banner)
 	fmt.Printf("\n %s%s%s\n\n", ColorGray, Tagline, ColorReset)
@@ -34,8 +34,8 @@ func ShowHelp() {
 	ShowBanner()
 
 	fmt.Printf("%sUSAGE%s\n", ColorBlue, ColorReset)
-	fmt.Printf("  %slt%s                          Interactive menu (recommended)\n", ColorGreen, ColorReset)
-	fmt.Printf("  %slt <command> [options]%s      Run a specific command\n\n", ColorGreen, ColorReset)
+	fmt.Printf("  %ssk%s                          Interactive menu (recommended)\n", ColorGreen, ColorReset)
+	fmt.Printf("  %ssk <command> [options]%s      Run a specific command\n\n", ColorGreen, ColorReset)
 
 	fmt.Printf("%sCOMMANDS%s\n", ColorBlue, ColorReset)
 	for _, cmd := range Commands {
@@ -129,22 +129,15 @@ func ShowCursor() {
 	fmt.Print("\033[?25h")
 }
 
-// ReadKey 读取单个按键
-func ReadKey() string {
-	// 设置终端为 raw 模式
-	fd := int(os.Stdin.Fd())
-	if runtime.GOOS != "windows" {
-		oldState, err := term.MakeRaw(fd)
-		if err != nil {
-			return "QUIT"
-		}
-		defer term.Restore(fd, oldState)
+// parseKeyFromBuffer 从缓冲区解析按键
+func parseKeyFromBuffer(buf []byte, n int) string {
+	if n == 0 {
+		return ""
 	}
 
-	buf := make([]byte, 6) // 增加缓冲区以支持 Shift+方向键
-	n, err := os.Stdin.Read(buf)
-	if err != nil || n == 0 {
-		return "QUIT"
+	// 忽略中文输入法产生的多字节 UTF-8 字符 (首字节 >= 0x80)
+	if buf[0] >= 0x80 {
+		return ""
 	}
 
 	switch buf[0] {
@@ -180,6 +173,8 @@ func ReadKey() string {
 		return "ENTER"
 	case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return fmt.Sprintf("NUM:%c", buf[0])
+	case 3: // Ctrl+C
+		return "QUIT"
 	case 27: // ESC 序列
 		if n >= 3 && buf[1] == '[' {
 			// 检查 Shift+方向键: ESC [1;2A/B/C/D
@@ -206,7 +201,39 @@ func ReadKey() string {
 		return "ESC"
 	}
 
-	return "OTHER"
+	return ""
+}
+
+// ReadKey 读取单个按键（支持中文输入法环境）
+func ReadKey() string {
+	fd := int(os.Stdin.Fd())
+	var oldState *term.State
+	var err error
+
+	if runtime.GOOS != "windows" {
+		oldState, err = term.MakeRaw(fd)
+		if err != nil {
+			return "QUIT"
+		}
+		defer term.Restore(fd, oldState)
+	}
+
+	buf := make([]byte, 32)
+
+	// 循环读取直到获得有效按键
+	for {
+		n, err := os.Stdin.Read(buf)
+		if err != nil {
+			return "QUIT"
+		}
+
+		// 尝试解析按键
+		key := parseKeyFromBuffer(buf, n)
+		if key != "" {
+			return key
+		}
+		// 无效输入（如中文字符），继续等待
+	}
 }
 
 // WaitForKey 等待任意按键

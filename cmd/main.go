@@ -318,7 +318,7 @@ func handleInteractiveRemove(cfg *lib.Config) bool {
 
 func handleUse(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Usage: lt use <module> [platform] [--global|--project] [--as <name>]")
+		fmt.Println("Usage: sk use <module> [platform] [--global|--project] [--as <name>]")
 		os.Exit(1)
 	}
 
@@ -472,7 +472,7 @@ func handlePlatforms(args []string) {
 
 func handleInfo(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Usage: lt info <module>")
+		fmt.Println("Usage: sk info <module>")
 		os.Exit(1)
 	}
 
@@ -504,7 +504,7 @@ func handleInfo(args []string) {
 
 func handleRemove(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Usage: lt remove <module> [platform]")
+		fmt.Println("Usage: sk remove <module> [platform]")
 		os.Exit(1)
 	}
 

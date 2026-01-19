@@ -9,8 +9,8 @@ build:
 	@go mod tidy
 	@go build -o bin/skillkit ./cmd
 	@ln -sf skillkit bin/sk
-	@chmod +x skillkit sk
-	@echo "Done. Run './skillkit' or './sk' to start."
+	@chmod +x bin/skillkit bin/sk
+	@echo "Done. Run './bin/skillkit' or './bin/sk' to start."
 
 # 清理
 clean:
