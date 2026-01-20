@@ -2,6 +2,8 @@ package lib
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +27,7 @@ type DiscoveredSkill struct {
 	Description string
 	Path        string
 	Category    string // skill 或 agent
+	Hash        string
 }
 
 // ParseSource 解析源地址字符串
@@ -173,7 +176,7 @@ func DiscoverSkills(basePath string, subpath string) ([]*DiscoveredSkill, error)
 	}
 
 	var skills []*DiscoveredSkill
-	seenNames := make(map[string]bool)
+	seenSkills := make(map[string]bool)
 
 	// 检查是否直接指向一个 skill
 	if hasSkillFile(searchPath) {
@@ -209,9 +212,12 @@ func DiscoverSkills(basePath string, subpath string) ([]*DiscoveredSkill, error)
 			skillDir := filepath.Join(dir, entry.Name())
 			if hasSkillFile(skillDir) {
 				skill := parseSkillFile(skillDir)
-				if skill != nil && !seenNames[skill.Name] {
-					skills = append(skills, skill)
-					seenNames[skill.Name] = true
+				if skill != nil {
+					key := skillKey(skill)
+					if !seenSkills[key] {
+						skills = append(skills, skill)
+						seenSkills[key] = true
+					}
 				}
 			}
 		}
@@ -219,7 +225,7 @@ func DiscoverSkills(basePath string, subpath string) ([]*DiscoveredSkill, error)
 
 	// 如果没找到，递归搜索
 	if len(skills) == 0 {
-		skills = findSkillsRecursive(searchPath, seenNames, 0, 5)
+		skills = findSkillsRecursive(searchPath, seenSkills, 0, 5)
 	}
 
 	return skills, nil
@@ -255,6 +261,8 @@ func parseSkillFile(dir string) *DiscoveredSkill {
 		return nil
 	}
 
+	hash := hashContent(content)
+
 	// 解析 frontmatter
 	name, description := parseFrontmatter(string(content))
 	if name == "" {
@@ -267,6 +275,7 @@ func parseSkillFile(dir string) *DiscoveredSkill {
 		Description: description,
 		Path:        dir,
 		Category:    category,
+		Hash:        hash,
 	}
 }
 
@@ -308,9 +317,12 @@ func findSkillsRecursive(dir string, seen map[string]bool, depth, maxDepth int) 
 
 	if hasSkillFile(dir) {
 		skill := parseSkillFile(dir)
-		if skill != nil && !seen[skill.Name] {
-			skills = append(skills, skill)
-			seen[skill.Name] = true
+		if skill != nil {
+			key := skillKey(skill)
+			if !seen[key] {
+				skills = append(skills, skill)
+				seen[key] = true
+			}
 		}
 	}
 
@@ -328,6 +340,20 @@ func findSkillsRecursive(dir string, seen map[string]bool, depth, maxDepth int) 
 	}
 
 	return skills
+}
+
+func skillKey(skill *DiscoveredSkill) string {
+	hash := skill.Hash
+	if hash == "" {
+		hash = "nohash"
+	}
+	// TODO: Add directory-content hashing for dedupe (backlog).
+	return skill.Category + ":" + skill.Name + ":" + hash
+}
+
+func hashContent(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
 }
 
 // InstallSkill 安装技能到本地仓库

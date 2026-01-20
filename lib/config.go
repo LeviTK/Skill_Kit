@@ -10,6 +10,7 @@ import (
 // Config 全局配置
 type Config struct {
 	RepoPath         string              `toml:"-"`
+	ConfigPath       string              `toml:"-"`
 	Platforms        map[string]Platform `toml:"platforms"`
 	DefaultPlatforms []string            `toml:"default_platforms"` // 默认同步的平台列表
 	PlatformOrder    []string            `toml:"platform_order"`    // 平台显示顺序
@@ -71,12 +72,16 @@ func LoadConfig() (*Config, error) {
 	}
 
 	cfg.RepoPath = repoPath
+	cfg.ConfigPath = configPath
 	return &cfg, nil
 }
 
 // SaveConfig 保存配置
 func SaveConfig(cfg *Config) error {
-	configPath := filepath.Join(cfg.RepoPath, "platforms.toml")
+	configPath := cfg.ConfigPath
+	if configPath == "" {
+		configPath = filepath.Join(cfg.RepoPath, "platforms.toml")
+	}
 	data, err := toml.Marshal(cfg)
 	if err != nil {
 		return err

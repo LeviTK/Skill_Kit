@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"skillkit/lib"
 )
@@ -143,6 +144,7 @@ func handleInteractiveUse(cfg *lib.Config) bool {
 func syncModuleToDefaultPlatforms(cfg *lib.Config, mod *lib.Module) bool {
 	targetPlatforms := getTargetPlatforms(cfg)
 	if len(targetPlatforms) == 0 {
+		warnNoTargetPlatforms(cfg)
 		return false
 	}
 
@@ -172,6 +174,7 @@ func syncModuleToDefaultPlatforms(cfg *lib.Config, mod *lib.Module) bool {
 func syncAllModulesToDefaultPlatforms(cfg *lib.Config, modules []*lib.Module) bool {
 	targetPlatforms := getTargetPlatforms(cfg)
 	if len(targetPlatforms) == 0 {
+		warnNoTargetPlatforms(cfg)
 		return false
 	}
 
@@ -218,6 +221,16 @@ func getTargetPlatforms(cfg *lib.Config) map[string]lib.Platform {
 		return platforms
 	}
 	return cfg.Platforms
+}
+
+func warnNoTargetPlatforms(cfg *lib.Config) {
+	lib.ClearScreen()
+	if len(cfg.DefaultPlatforms) > 0 {
+		fmt.Printf("\n%s No valid default platforms configured.\n\n", lib.Yellow(lib.IconWarning))
+	} else {
+		fmt.Printf("\n%s No platforms configured.\n\n", lib.Yellow(lib.IconWarning))
+	}
+	lib.WaitForKey()
 }
 
 // handleModuleDetail 处理模块详情页
@@ -476,7 +489,15 @@ func handleUse(args []string) {
 			if ln == "" {
 				ln = mod.GetLinkName(name)
 			}
-			targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
+			baseDir := p.Global
+			if scope == "project" {
+				if p.Project == "" {
+					fmt.Printf("%s Project path not configured for platform: %s\n", lib.Red(lib.IconError), name)
+					os.Exit(1)
+				}
+				baseDir = p.Project
+			}
+			targetDir := lib.ResolvePath(baseDir, p.GetCategoryDir(mod.Category))
 			targetPath := targetDir + "/" + ln
 
 			action := "CREATE"
@@ -495,8 +516,15 @@ func handleUse(args []string) {
 			if ln == "" {
 				ln = mod.GetLinkName(name)
 			}
-
-			targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
+			baseDir := p.Global
+			if scope == "project" {
+				if p.Project == "" {
+					fmt.Printf("  %s Project path not configured for platform: %s\n", lib.Red(lib.IconError), name)
+					continue
+				}
+				baseDir = p.Project
+			}
+			targetDir := lib.ResolvePath(baseDir, p.GetCategoryDir(mod.Category))
 			targetPath := targetDir + "/" + ln
 
 			err := lib.CreateSymlink(mod.Path, targetPath, scope == "project")
@@ -525,7 +553,7 @@ func handleList(args []string) {
 
 	if len(modules) == 0 {
 		fmt.Printf("\n%s No modules found in ~/.config/agent/\n", lib.Yellow(lib.IconWarning))
-		fmt.Println("  Run 'lt init' to initialize the repository.")
+		fmt.Println("  Run 'sk init' to initialize the repository.")
 		fmt.Println()
 		return
 	}
@@ -811,7 +839,8 @@ func handleInit(args []string) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// 读取当前目录的 platforms.toml
 		execPath, _ := os.Executable()
-		srcPath := execPath[:len(execPath)-len("bin/skillkit")] + "platforms.toml"
+		execDir := filepath.Dir(execPath)
+		srcPath := filepath.Join(execDir, "..", "platforms.toml")
 
 		if data, err := os.ReadFile(srcPath); err == nil {
 			if err := os.WriteFile(configPath, data, 0644); err == nil {
