@@ -29,6 +29,8 @@ skill-kit/
 │   ├── module_test.go    # 模块测试
 │   └── ui.go             # 交互式菜单、选择器、确认弹窗
 ├── bin/                  # 构建产物
+├── doc/                  # 开发文档
+│   └── DEVELOPMENT.md    # 详细架构与开发指南
 ├── scripts/install.sh    # 安装脚本
 ├── platforms.toml        # 默认平台配置
 ├── Makefile              # 构建脚本
