@@ -12,7 +12,7 @@ import (
 // UI 交互式界面组件
 
 const (
-	Version = "0.2.0"
+	Version = "0.1.0"
 	Tagline = "Cross-Platform AI Skill Distribution Hub"
 )
 
@@ -58,8 +58,9 @@ func ShowHelp() {
 	fmt.Println()
 	fmt.Printf("%sEXAMPLES%s\n", ColorBlue, ColorReset)
 	fmt.Printf("  %ssk%s                          Start interactive menu\n", ColorGreen, ColorReset)
+	fmt.Printf("  %ssk add owner/repo%s           Download skills from GitHub\n", ColorGreen, ColorReset)
 	fmt.Printf("  %ssk use my-skill%s             Sync skill to all platforms\n", ColorGreen, ColorReset)
-	fmt.Printf("  %ssk use my-skill amp%s         Sync skill to specific platform\n", ColorGreen, ColorReset)
+	fmt.Printf("  %ssk use my-skill claude%s      Sync skill to specific platform\n", ColorGreen, ColorReset)
 	fmt.Printf("  %ssk list%s                     Show all modules and status\n", ColorGreen, ColorReset)
 	fmt.Printf("  %ssk remove my-skill%s          Remove skill from all platforms\n", ColorGreen, ColorReset)
 

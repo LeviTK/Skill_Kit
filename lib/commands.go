@@ -9,6 +9,7 @@ type Command struct {
 
 // Commands 命令注册表
 var Commands = []Command{
+	{"add", "Download skill from git repo or local path", "sk add <source>"},
 	{"use", "Distribute a skill/agent to platform(s)", "sk use <module> [platform]"},
 	{"list", "List all modules and their link status", "sk list"},
 	{"platforms", "Show registered platforms", "sk platforms"},

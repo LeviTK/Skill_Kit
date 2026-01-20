@@ -37,6 +37,8 @@ func main() {
 
 func handleCommand(cmd string, args []string) {
 	switch cmd {
+	case "add":
+		handleAdd(args)
 	case "use":
 		handleUse(args)
 	case "list":
@@ -313,6 +315,99 @@ func handleInteractiveRemove(cfg *lib.Config) bool {
 		}
 		handleRemove(args)
 		return true
+	}
+}
+
+func handleAdd(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Usage: sk add <source>")
+		fmt.Println()
+		fmt.Println("Source formats:")
+		fmt.Println("  owner/repo                    GitHub shorthand")
+		fmt.Println("  owner/repo/path/to/skill      GitHub with subpath")
+		fmt.Println("  https://github.com/owner/repo GitHub URL")
+		fmt.Println("  ./local/path                  Local directory")
+		os.Exit(1)
+	}
+
+	source := args[0]
+	parsed := lib.ParseSource(source)
+
+	fmt.Printf("\n%s Parsing source: %s\n", lib.Blue(lib.IconInfo), source)
+
+	var searchPath string
+	var tempDir string
+
+	if parsed.Type == "local" {
+		// 本地路径
+		if _, err := os.Stat(parsed.LocalPath); os.IsNotExist(err) {
+			fmt.Printf("%s Path not found: %s\n", lib.Red(lib.IconError), parsed.LocalPath)
+			os.Exit(1)
+		}
+		searchPath = parsed.LocalPath
+		fmt.Printf("%s Using local path: %s\n", lib.Green(lib.IconSuccess), searchPath)
+	} else {
+		// 远程仓库，需要克隆
+		fmt.Printf("%s Cloning %s...\n", lib.Blue(lib.IconInfo), parsed.URL)
+		var err error
+		tempDir, err = lib.CloneRepo(parsed.URL, parsed.Ref)
+		if err != nil {
+			fmt.Printf("%s %v\n", lib.Red(lib.IconError), err)
+			os.Exit(1)
+		}
+		defer lib.CleanupTempDir(tempDir)
+		searchPath = tempDir
+		fmt.Printf("%s Cloned to temp directory\n", lib.Green(lib.IconSuccess))
+	}
+
+	// 发现技能
+	fmt.Printf("%s Discovering skills...\n", lib.Blue(lib.IconInfo))
+	skills, err := lib.DiscoverSkills(searchPath, parsed.Subpath)
+	if err != nil {
+		fmt.Printf("%s %v\n", lib.Red(lib.IconError), err)
+		os.Exit(1)
+	}
+
+	if len(skills) == 0 {
+		fmt.Printf("%s No skills found in source\n", lib.Yellow(lib.IconWarning))
+		os.Exit(0)
+	}
+
+	// 选择要安装的技能
+	selectedSkills := lib.SelectSkillsInteractive(skills)
+	if len(selectedSkills) == 0 {
+		fmt.Printf("\n%s No skills selected\n", lib.Yellow(lib.IconWarning))
+		os.Exit(0)
+	}
+
+	// 加载配置
+	cfg, err := lib.LoadConfig()
+	if err != nil {
+		fmt.Printf("%s %v\n", lib.Red(lib.IconError), err)
+		os.Exit(1)
+	}
+
+	// 安装选中的技能
+	fmt.Println()
+	success := 0
+	failed := 0
+	for _, skill := range selectedSkills {
+		err := lib.InstallSkill(skill, cfg)
+		if err != nil {
+			fmt.Printf("  %s %s: %v\n", lib.Red(lib.IconError), skill.Name, err)
+			failed++
+		} else {
+			fmt.Printf("  %s %s → %s/%s/\n", lib.Green(lib.IconSuccess), skill.Name, cfg.RepoPath, skill.Category)
+			success++
+		}
+	}
+
+	fmt.Println()
+	if success > 0 {
+		fmt.Printf("%s Installed %d skill(s). Run 'sk use' to distribute.\n\n", lib.Green(lib.IconSuccess), success)
+	}
+	if failed > 0 {
+		fmt.Printf("%s Failed to install %d skill(s)\n\n", lib.Red(lib.IconError), failed)
 	}
 }
 

@@ -1,71 +1,131 @@
 # Skill Kit
 
-**跨平台 AI 技能分发枢纽** - 将统一仓库中的 AI Skills/Agents 通过软链接分发到不同 AI 工具的配置目录。
+Install, manage and distribute AI agent skills across multiple coding agents from a single repository.
 
-## 功能
+Supports **Claude Code**, **Cursor**, **Amp**, **OpenCode**, **Codex**, and [9 more](#supported-platforms).
 
-- **统一管理**：在 `~/.config/agent/` 维护所有 Skills 和 Agents
-- **多平台支持**：Claude、Cursor、Copilot、OpenCode、Gemini、Windsurf 等 8 个平台
-- **软链接分发**：一处修改，多处生效
-- **自定义别名**：支持为不同平台指定不同的链接名称
-
-## 快速开始
+## Quick Start
 
 ```bash
-# 构建
-make build
+# Install
+make build && make install
 
-# 初始化配置目录
-make init
+# Download skills from GitHub
+sk add vercel-labs/agent-skills
 
-# 安装到系统
-make install
+# Distribute to all platforms
+sk use my-skill
 ```
 
-## 使用
+## What is Skill Kit?
+
+Skill Kit is a cross-platform AI skill distribution hub that:
+
+- **Downloads** skills from any git repository (GitHub, GitLab, or local)
+- **Manages** skills in a unified repository (`~/.config/agent/`)
+- **Distributes** via symlinks to 14+ AI coding tools
+- **Syncs** changes instantly - edit once, update everywhere
+
+## Usage
+
+### Source Formats
+
+The `<source>` argument accepts multiple formats:
 
 ```bash
-# 分发模块到指定平台
-sk use python-coder claude
+# GitHub shorthand
+sk add vercel-labs/agent-skills
 
-# 分发到所有平台
-sk use python-coder
+# Full GitHub URL
+sk add https://github.com/vercel-labs/agent-skills
 
-# 使用自定义链接名
-sk use python-coder cursor --as py-coder
+# Direct path to a skill in a repo
+sk add https://github.com/owner/repo/tree/main/skills/my-skill
 
-# 列出所有模块及状态
+# GitLab URL
+sk add https://gitlab.com/org/repo
+
+# Local directory
+sk add ./local/skills
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `sk` | Interactive menu (recommended) |
+| `sk add <source>` | Download skills from git repo or local path |
+| `sk use <module> [platform]` | Distribute skill to platform(s) via symlink |
+| `sk list` | List all modules and their link status |
+| `sk platforms` | Show registered platforms |
+| `sk info <module>` | Show module details and aliases |
+| `sk remove <module> [platform]` | Remove symlinks for a module |
+| `sk status` | Health check: detect broken symlinks |
+| `sk sync` | Sync all modules to all platforms |
+| `sk init` | Initialize the agent repository |
+
+### Examples
+
+```bash
+# Interactive mode
+sk
+
+# Download and select skills to install
+sk add vercel-labs/agent-skills
+
+# Distribute a skill to all default platforms
+sk use my-skill
+
+# Distribute to specific platform
+sk use my-skill claude
+
+# Use custom link name
+sk use my-skill cursor --as py-coder
+
+# List all modules with status
 sk list
 
-# 查看已注册平台
-sk platforms
-
-# 查看模块详情
-sk info python-coder
-
-# 移除软链接
-sk remove python-coder claude
-
-# 同步所有模块
-sk sync
+# Remove skill from all platforms
+sk remove my-skill
 ```
 
-## 目录结构
+## Supported Platforms
+
+Skills can be distributed to any of these supported agents:
+
+| Platform | Project Path | Global Path |
+|----------|--------------|-------------|
+| OpenCode | `.opencode/skills/` | `~/.config/opencode/skills/` |
+| Claude Code | `.claude/skills/` | `~/.claude/skills/` |
+| OpenAI Codex | `.codex/skills/` | `~/.codex/skills/` |
+| Cursor | `.cursor/skills/` | `~/.cursor/skills/` |
+| Amp | `.agents/skills/` | `~/.config/agents/skills/` |
+| Kilo Code | `.kilocode/skills/` | `~/.kilocode/skills/` |
+| Roo Code | `.roo/skills/` | `~/.roo/skills/` |
+| Goose | `.goose/skills/` | `~/.config/goose/skills/` |
+| Gemini CLI | `.gemini/skills/` | `~/.gemini/skills/` |
+| Antigravity | `.agent/skills/` | `~/.gemini/antigravity/skills/` |
+| GitHub Copilot | `.github/skills/` | `~/.copilot/skills/` |
+| Clawdbot | `skills/` | `~/.clawdbot/skills/` |
+| Droid | `.factory/skills/` | `~/.factory/skills/` |
+| Windsurf | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+
+## Directory Structure
 
 ```
 ~/.config/agent/
-├── platforms.toml        # 平台注册表
-├── skill/                # 技能池
-│   └── python-coder/
-│       ├── AGENT.md      # 技能文档
-│       └── skillkit.toml # 可选：自定义配置
-└── agent/                # 代理池
-    └── writer-bot/
+├── platforms.toml        # Platform registry
+├── skill/                # Skill pool
+│   └── my-skill/
+│       ├── SKILL.md      # Skill documentation
+│       └── skillkit.toml # Optional: custom config
+└── agent/                # Agent pool
+    └── my-agent/
 ```
 
-## 平台配置
+## Platform Configuration
 
-编辑 `~/.config/agent/platforms.toml` 添加或修改平台：
+Edit `~/.config/agent/platforms.toml` to add or modify platforms:
 
 ```toml
 [platforms.claude]
@@ -74,11 +134,14 @@ project = ".claude/"
 global = "~/.claude/"
 skill_dir = "skills"
 agent_dir = "agents"
+
+# Default platforms for sync
+default_platforms = ["claude", "cursor", "amp"]
 ```
 
-## 模块别名
+## Module Aliases
 
-在模块目录下创建 `skillkit.toml` 自定义链接名：
+Create `skillkit.toml` in module directory to customize link names:
 
 ```toml
 [link]
@@ -89,18 +152,26 @@ claude = "py-expert"
 cursor = "py-coder"
 ```
 
-## 支持的平台
+## Creating Skills
 
-| 平台               | 全局路径                       |
-| ------------------ | ------------------------------ |
-| Claude Code        | `~/.claude/skills/`              |
-| GitHub Copilot     | `~/.copilot/skills/`             |
-| Google Antigravity | `~/.gemini/antigravity/skills/`  |
-| Cursor             | `~/.cursor/skills/`              |
-| OpenCode           | `~/.config/opencode/skill/`      |
-| OpenAI Codex       | `~/.codex/skills/`               |
-| Gemini CLI         | `~/.gemini/skills/`              |
-| Windsurf           | `~/.codeium/windsurf/skills/`    |
+Skills are directories containing a `SKILL.md` file with YAML frontmatter:
+
+```markdown
+---
+name: my-skill
+description: What this skill does and when to use it
+---
+
+# My Skill
+
+Instructions for the agent...
+```
+
+## Related Links
+
+- [Vercel Agent Skills Repository](https://github.com/vercel-labs/agent-skills)
+- [Agent Skills Specification](https://agentskills.io)
+- [add-skill CLI](https://github.com/vercel-labs/add-skill)
 
 ## License
 

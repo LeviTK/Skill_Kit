@@ -1,5 +1,12 @@
-# Linktrack Platform Registry
+# Skill Kit Platform Registry
 # 平台注册表：定义各 AI 工具的技能/代理目录路径
+
+[platforms.opencode]
+name = "OpenCode"
+project = ".opencode/"
+global = "~/.config/opencode/"
+skill_dir = "skills"
+agent_dir = "agents"
 
 [platforms.claude]
 name = "Claude Code"
@@ -8,17 +15,10 @@ global = "~/.claude/"
 skill_dir = "skills"
 agent_dir = "agents"
 
-[platforms.copilot]
-name = "GitHub Copilot"
-project = ".github/"
-global = "~/.copilot/"
-skill_dir = "skills"
-agent_dir = "agents"
-
-[platforms.antigravity]
-name = "Google Antigravity"
-project = ".agent/"
-global = "~/.gemini/antigravity/"
+[platforms.codex]
+name = "OpenAI Codex"
+project = ".codex/"
+global = "~/.codex/"
 skill_dir = "skills"
 agent_dir = "agents"
 
@@ -29,17 +29,31 @@ global = "~/.cursor/"
 skill_dir = "skills"
 agent_dir = "agents"
 
-[platforms.opencode]
-name = "OpenCode"
-project = ".opencode/"
-global = "~/.config/opencode/"
-skill_dir = "skill"
-agent_dir = "agent"
+[platforms.amp]
+name = "Amp"
+project = ".agents/"
+global = "~/.config/agents/"
+skill_dir = "skills"
+agent_dir = "agents"
 
-[platforms.codex]
-name = "OpenAI Codex"
-project = ".codex/"
-global = "~/.codex/"
+[platforms.kilo]
+name = "Kilo Code"
+project = ".kilocode/"
+global = "~/.kilocode/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.roo]
+name = "Roo Code"
+project = ".roo/"
+global = "~/.roo/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.goose]
+name = "Goose"
+project = ".goose/"
+global = "~/.config/goose/"
 skill_dir = "skills"
 agent_dir = "agents"
 
@@ -47,6 +61,34 @@ agent_dir = "agents"
 name = "Gemini CLI"
 project = ".gemini/"
 global = "~/.gemini/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.antigravity]
+name = "Antigravity"
+project = ".agent/"
+global = "~/.gemini/antigravity/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.copilot]
+name = "GitHub Copilot"
+project = ".github/"
+global = "~/.copilot/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.clawdbot]
+name = "Clawdbot"
+project = ""
+global = "~/.clawdbot/"
+skill_dir = "skills"
+agent_dir = "agents"
+
+[platforms.droid]
+name = "Droid"
+project = ".factory/"
+global = "~/.factory/"
 skill_dir = "skills"
 agent_dir = "agents"
 
@@ -58,4 +100,4 @@ skill_dir = "skills"
 agent_dir = "agents"
 
 # 默认同步平台列表（按 key 填写）
-default_platforms = ["claude", "cursor"]
+default_platforms = ["claude", "cursor", "amp"]
