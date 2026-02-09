@@ -242,47 +242,42 @@ func handleModuleDetail(cfg *lib.Config, mod *lib.Module) bool {
 		case "quit":
 			return false
 		case "apply":
-			// 有变更时执行
+			// 有变更时直接执行
 			if len(detailResult.ToSync) > 0 || len(detailResult.ToRemove) > 0 {
-				// 二次确认
-				msg := fmt.Sprintf("Apply changes? (+%d sync, -%d remove)", len(detailResult.ToSync), len(detailResult.ToRemove))
-				if lib.ConfirmDialog(msg) {
-					lib.ClearScreen()
-					fmt.Println()
+				lib.ClearScreen()
+				fmt.Println()
 
-					// 执行同步
-					for _, platKey := range detailResult.ToSync {
-						p := cfg.Platforms[platKey]
-						ln := mod.GetLinkName(platKey)
-						targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
-						targetPath := targetDir + "/" + ln
+				// 执行同步
+				for _, platKey := range detailResult.ToSync {
+					p := cfg.Platforms[platKey]
+					ln := mod.GetLinkName(platKey)
+					targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
+					targetPath := targetDir + "/" + ln
 
-						err := lib.CreateSymlink(mod.Path, targetPath, false)
-						if err != nil {
-							fmt.Printf("  %s %s → %s: %v\n", lib.Red(lib.IconError), mod.Name, platKey, err)
-						} else {
-							fmt.Printf("  %s %s %s %s\n", lib.Green(lib.IconSuccess), mod.Name, lib.Cyan(lib.IconLink), p.Name)
-						}
+					err := lib.CreateSymlink(mod.Path, targetPath, false)
+					if err != nil {
+						fmt.Printf("  %s %s → %s: %v\n", lib.Red(lib.IconError), mod.Name, platKey, err)
+					} else {
+						fmt.Printf("  %s %s %s %s\n", lib.Green(lib.IconSuccess), mod.Name, lib.Cyan(lib.IconLink), p.Name)
 					}
+				}
 
-					// 执行删除
-					for _, platKey := range detailResult.ToRemove {
-						p := cfg.Platforms[platKey]
-						ln := mod.GetLinkName(platKey)
-						targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
-						targetPath := targetDir + "/" + ln
+				// 执行删除
+				for _, platKey := range detailResult.ToRemove {
+					p := cfg.Platforms[platKey]
+					ln := mod.GetLinkName(platKey)
+					targetDir := lib.ResolvePath(p.Global, p.GetCategoryDir(mod.Category))
+					targetPath := targetDir + "/" + ln
 
-						err := lib.RemoveSymlink(targetPath)
-						if err != nil {
-							fmt.Printf("  %s Remove %s from %s: %v\n", lib.Red(lib.IconError), mod.Name, platKey, err)
-						} else {
-							fmt.Printf("  %s Removed from %s\n", lib.Yellow(lib.IconWarning), p.Name)
-						}
+					err := lib.RemoveSymlink(targetPath)
+					if err != nil {
+						fmt.Printf("  %s Remove %s from %s: %v\n", lib.Red(lib.IconError), mod.Name, platKey, err)
+					} else {
+						fmt.Printf("  %s Removed from %s\n", lib.Yellow(lib.IconWarning), p.Name)
 					}
-					return true
 				}
 			}
-			// 无变更或取消确认，返回模块列表
+			// 返回模块列表
 			return true
 		}
 	}

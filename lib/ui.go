@@ -399,6 +399,17 @@ func ModuleListMenu(cfg *Config) ModuleListResult {
 	maxOptions := len(modules)
 	selectAll := false // 全选状态
 
+	// 预计算所有模块描述的最大行数
+	maxDescLines := 0
+	for _, m := range modules {
+		if m.Description != "" {
+			lines := countWrappedLines(m.Description)
+			if lines > maxDescLines {
+				maxDescLines = lines
+			}
+		}
+	}
+
 	HideCursor()
 	defer ShowCursor()
 
@@ -429,9 +440,13 @@ func ModuleListMenu(cfg *Config) ModuleListResult {
 			fmt.Printf("  %s %s\n", Gray("Synced:"), Gray("(none)"))
 		}
 
-		// 显示当前选中模块的描述（带换行对齐）
+		// 显示当前选中模块的描述（固定高度，防止列表跳动）
 		if currentMod.Description != "" {
-			printWrappedDesc(currentMod.Description)
+			printWrappedDescFixed(currentMod.Description, maxDescLines)
+		} else if maxDescLines > 0 {
+			for i := 0; i < maxDescLines; i++ {
+				fmt.Println()
+			}
 		}
 
 		fmt.Println()
@@ -519,12 +534,8 @@ func joinStrings(strs []string, sep string) string {
 	return result
 }
 
-// printWrappedDesc 打印描述文本，支持换行对齐
-func printWrappedDesc(desc string) {
-	prefix := "  " + Gray("Desc:") + " "
-	indent := "        " // 8 空格，与 "  Desc: " 对齐
-
-	// 获取终端宽度，默认 80，使用 2/3
+// getDescMaxWidth 获取描述区域的最大宽度
+func getDescMaxWidth() int {
 	width := 80
 	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
 		width = w
@@ -533,16 +544,53 @@ func printWrappedDesc(desc string) {
 	if maxWidth < 40 {
 		maxWidth = 40
 	}
+	return maxWidth
+}
+
+// countWrappedLines 计算描述文本在当前终端宽度下占用的行数
+func countWrappedLines(desc string) int {
+	if desc == "" {
+		return 0
+	}
+	maxWidth := getDescMaxWidth()
+	lines := 1
+	lineWidth := 0
+
+	for _, r := range desc {
+		charWidth := 1
+		if r > 127 {
+			charWidth = 2
+		}
+		if lineWidth+charWidth > maxWidth && lineWidth > 0 {
+			lines++
+			lineWidth = 0
+		}
+		lineWidth += charWidth
+	}
+	return lines
+}
+
+// printWrappedDesc 打印描述文本，支持换行对齐
+func printWrappedDesc(desc string) {
+	printWrappedDescFixed(desc, 0)
+}
+
+// printWrappedDescFixed 打印描述文本，固定占用 totalLines 行（不足用空行填充）
+func printWrappedDescFixed(desc string, totalLines int) {
+	prefix := "  " + Gray("Desc:") + " "
+	indent := "        " // 8 空格，与 "  Desc: " 对齐
+	maxWidth := getDescMaxWidth()
 
 	// 按 rune 处理，避免中文截断
 	runes := []rune(desc)
 	lineWidth := 0
 	firstLine := true
+	actualLines := 1
 
 	for _, r := range runes {
 		charWidth := 1
 		if r > 127 {
-			charWidth = 2 // 中文等宽字符占 2 格
+			charWidth = 2
 		}
 
 		if lineWidth+charWidth > maxWidth && lineWidth > 0 {
@@ -550,6 +598,7 @@ func printWrappedDesc(desc string) {
 			fmt.Print(indent)
 			lineWidth = 0
 			firstLine = false
+			actualLines++
 		}
 
 		if lineWidth == 0 && firstLine {
@@ -560,6 +609,11 @@ func printWrappedDesc(desc string) {
 		lineWidth += charWidth
 	}
 	fmt.Println()
+
+	// 用空行填充到固定行数
+	for i := actualLines; i < totalLines; i++ {
+		fmt.Println()
+	}
 }
 
 // ListMenu 交互式列表菜单，支持模式切换和平台排序
