@@ -356,15 +356,20 @@ func hashContent(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// InstallSkill 安装技能到本地仓库
+// InstallSkill 安装技能到本地仓库（含重复检测）
 func InstallSkill(skill *DiscoveredSkill, cfg *Config) error {
-	// 目标目录
 	targetBase := filepath.Join(cfg.RepoPath, skill.Category)
 	targetDir := filepath.Join(targetBase, skill.Name)
 
 	// 检查是否已存在
 	if _, err := os.Stat(targetDir); err == nil {
-		return fmt.Errorf("skill '%s' already exists at %s", skill.Name, targetDir)
+		dup := CheckInstallDuplicate(skill, cfg)
+		switch dup {
+		case "identical":
+			return &SkillExistsError{Name: skill.Name, Identical: true}
+		case "different":
+			return &SkillExistsError{Name: skill.Name, Identical: false, Path: targetDir}
+		}
 	}
 
 	// 创建目标目录
@@ -379,6 +384,26 @@ func InstallSkill(skill *DiscoveredSkill, cfg *Config) error {
 	}
 
 	return nil
+}
+
+// SkillExistsError 技能已存在错误
+type SkillExistsError struct {
+	Name      string
+	Identical bool   // true=内容完全相同, false=同名但内容不同
+	Path      string // 已存在的路径
+}
+
+func (e *SkillExistsError) Error() string {
+	if e.Identical {
+		return fmt.Sprintf("skill '%s' already exists (identical content)", e.Name)
+	}
+	return fmt.Sprintf("skill '%s' already exists with different content at %s", e.Name, e.Path)
+}
+
+// IsSkillExists 检查是否为技能已存在错误
+func IsSkillExists(err error) (*SkillExistsError, bool) {
+	e, ok := err.(*SkillExistsError)
+	return e, ok
 }
 
 func copyDir(src, dst string) error {

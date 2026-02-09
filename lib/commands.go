@@ -16,7 +16,7 @@ var Commands = []Command{
 	{"info", "Show module details and aliases", "sk info <module>"},
 	{"remove", "Remove symlinks for a module", "sk remove <module> [platform]"},
 	{"status", "Health check: detect broken symlinks", "sk status"},
-	{"init", "Initialize the agent repository", "sk init"},
+	{"init", "Initialize repo (--collect: gather platform skills)", "sk init [--collect]"},
 	{"help", "Show help message", "sk -h"},
 	{"version", "Show version", "sk -v"},
 }

@@ -721,6 +721,89 @@ func ListMenu(cfg *Config) {
 	}
 }
 
+// ConflictResolveMenu 冲突解决交互菜单，逐个显示冲突让用户选择保留哪个版本
+// 返回选中的 CollectedSkill，nil 表示跳过
+func ConflictResolveMenu(group *CollectGroup) *CollectedSkill {
+	realSkills := group.RealSkills()
+	if len(realSkills) == 0 {
+		return nil
+	}
+
+	selected := 0
+
+	// 标记相同 hash
+	hashFirst := make(map[string]int) // hash -> 第一次出现的索引
+	for i, s := range realSkills {
+		if _, ok := hashFirst[s.Hash]; !ok {
+			hashFirst[s.Hash] = i
+		}
+	}
+
+	HideCursor()
+	defer ShowCursor()
+
+	for {
+		ClearScreen()
+		fmt.Println()
+		fmt.Printf("  %s Conflict: %s \"%s\" has %d different versions\n\n",
+			Yellow(IconWarning), group.Category, group.Name, len(realSkills))
+
+		for i, s := range realSkills {
+			prefix := "    "
+			if i == selected {
+				prefix = "  " + Cyan(IconArrow) + " "
+			}
+
+			// hash 缩写
+			hashStr := "(no hash)"
+			if s.Hash != "" {
+				hashStr = s.Hash[:8]
+			}
+
+			// 同 hash 标记
+			sameTag := ""
+			if first, ok := hashFirst[s.Hash]; ok && first != i && s.Hash != "" {
+				sameTag = Gray(fmt.Sprintf(" (same as #%d)", first+1))
+			}
+
+			if i == selected {
+				fmt.Printf("%s%d. %s  (%s)\n", prefix, i+1, White(s.PlatName), s.Platform)
+			} else {
+				fmt.Printf("%s%d. %s  (%s)\n", prefix, i+1, s.PlatName, s.Platform)
+			}
+			fmt.Printf("        Hash: %s%s\n", Gray(hashStr), sameTag)
+			if s.Desc != "" {
+				fmt.Printf("        Desc: %s\n", Gray(s.Desc))
+			}
+			fmt.Printf("        Path: %s\n", Gray(s.Path))
+		}
+
+		fmt.Println()
+		fmt.Printf("  %s↑↓ Navigate  |  Enter Keep selected  |  S Skip%s\n", ColorGray, ColorReset)
+
+		key := ReadKey()
+
+		switch key {
+		case "UP":
+			if selected > 0 {
+				selected--
+			}
+		case "DOWN":
+			if selected < len(realSkills)-1 {
+				selected++
+			}
+		case "ENTER", "RIGHT":
+			return realSkills[selected]
+		case "QUIT", "ESC":
+			return nil
+		}
+		// S 键跳过
+		if key == "SPACE" {
+			return nil
+		}
+	}
+}
+
 // SelectPlatformMenu 平台选择菜单，包含 "All Platforms" 选项
 func SelectPlatformMenu(cfg *Config) SelectMenuResult {
 	options := []SelectOption{

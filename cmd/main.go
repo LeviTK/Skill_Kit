@@ -398,12 +398,23 @@ func handleAdd(args []string) {
 	// 安装选中的技能
 	fmt.Println()
 	success := 0
+	skipped := 0
 	failed := 0
 	for _, skill := range selectedSkills {
 		err := lib.InstallSkill(skill, cfg)
 		if err != nil {
-			fmt.Printf("  %s %s: %v\n", lib.Red(lib.IconError), skill.Name, err)
-			failed++
+			if e, ok := lib.IsSkillExists(err); ok {
+				if e.Identical {
+					fmt.Printf("  %s %s: already exists (identical), skipped\n", lib.Gray("○"), skill.Name)
+					skipped++
+				} else {
+					fmt.Printf("  %s %s: exists with different content, skipped\n", lib.Yellow(lib.IconWarning), skill.Name)
+					skipped++
+				}
+			} else {
+				fmt.Printf("  %s %s: %v\n", lib.Red(lib.IconError), skill.Name, err)
+				failed++
+			}
 		} else {
 			fmt.Printf("  %s %s → %s/%s/\n", lib.Green(lib.IconSuccess), skill.Name, cfg.RepoPath, skill.Category)
 			success++
@@ -412,11 +423,15 @@ func handleAdd(args []string) {
 
 	fmt.Println()
 	if success > 0 {
-		fmt.Printf("%s Installed %d skill(s). Run 'sk use' to distribute.\n\n", lib.Green(lib.IconSuccess), success)
+		fmt.Printf("%s Installed %d skill(s). Run 'sk use' to distribute.\n", lib.Green(lib.IconSuccess), success)
+	}
+	if skipped > 0 {
+		fmt.Printf("%s Skipped %d skill(s) (already exist)\n", lib.Gray("○"), skipped)
 	}
 	if failed > 0 {
-		fmt.Printf("%s Failed to install %d skill(s)\n\n", lib.Red(lib.IconError), failed)
+		fmt.Printf("%s Failed to install %d skill(s)\n", lib.Red(lib.IconError), failed)
 	}
+	fmt.Println()
 }
 
 func handleUse(args []string) {
@@ -810,6 +825,14 @@ func handleStatus(args []string) {
 }
 
 func handleInit(args []string) {
+	// 检查 --collect 标志
+	collect := false
+	for _, arg := range args {
+		if arg == "--collect" {
+			collect = true
+		}
+	}
+
 	home, _ := os.UserHomeDir()
 	repoPath := home + "/.config/agent"
 
@@ -832,7 +855,6 @@ func handleInit(args []string) {
 	// 复制 platforms.toml 如果不存在
 	configPath := repoPath + "/platforms.toml"
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// 读取当前目录的 platforms.toml
 		execPath, _ := os.Executable()
 		execDir := filepath.Dir(execPath)
 		srcPath := filepath.Join(execDir, "..", "platforms.toml")
@@ -847,7 +869,22 @@ func handleInit(args []string) {
 	}
 
 	fmt.Println()
-	fmt.Printf("  %s Repository initialized at %s\n\n", lib.Green(lib.IconSuccess), repoPath)
+	fmt.Printf("  %s Repository initialized at %s\n", lib.Green(lib.IconSuccess), repoPath)
+
+	// --collect: 扫描平台目录，收集 skill 到中央仓库
+	if collect {
+		cfg, err := lib.LoadConfig()
+		if err != nil {
+			fmt.Printf("\n%s Error loading config: %v\n\n", lib.Red(lib.IconError), err)
+			return
+		}
+
+		result := lib.RunCollect(cfg)
+		fmt.Println()
+		fmt.Printf("  %s\n\n", lib.FormatCollectSummary(result))
+	} else {
+		fmt.Println()
+	}
 }
 
 func hasPrefix(s, prefix string) bool {

@@ -18,19 +18,23 @@
 skill-kit/
 ├── cmd/main.go           # 入口，命令路由与参数解析
 ├── lib/                  # 核心库
+│   ├── collect.go        # 平台 Skill 收集、去重与软链接替换
 │   ├── color.go          # 终端颜色与图标
 │   ├── commands.go       # 命令定义注册表
 │   ├── config.go         # 配置加载 (platforms.toml)
+│   ├── download.go       # 技能下载、发现、安装 (含重复检测)
 │   ├── errors.go         # 自定义错误类型
 │   ├── errors_test.go    # 错误类型测试
 │   ├── link.go           # 软链接操作 (创建/删除/检查)
 │   ├── link_test.go      # 软链接测试
 │   ├── module.go         # 模块发现与管理 (含描述读取)
 │   ├── module_test.go    # 模块测试
-│   └── ui.go             # 交互式菜单、选择器、确认弹窗
+│   └── ui.go             # 交互式菜单、选择器、确认弹窗、冲突解决
 ├── bin/                  # 构建产物
 ├── doc/                  # 开发文档
-│   └── DEVELOPMENT.md    # 详细架构与开发指南
+│   ├── CHANGELOG.md      # 中文更新日志
+│   ├── DEVELOPMENT.md    # 详细架构与开发指南
+│   └── DUPLICATE_DETECTION.md  # 重复检测机制文档
 ├── scripts/install.sh    # 安装脚本
 ├── platforms.toml        # 默认平台配置
 ├── Makefile              # 构建脚本
@@ -75,7 +79,7 @@ sk info <module>
 sk remove <module> [platform]
 sk sync [--dry-run]
 sk status
-sk init
+sk init [--collect]
 ```
 
 ## Interactive Mode
@@ -100,7 +104,26 @@ sk init
 2. **模块详情页**: 显示模块信息和平台列表
    - 从 SKILL.md/AGENT.md 读取 `description` 字段显示描述
    - `[✓]` 选中 = 同步, `[ ]` 取消 = 删除
-   - `←` 返回时自动应用变更（需二次确认）
+   - `←` 返回时直接应用变更（无需二次确认）
+
+### Init --collect 收集流程
+
+`sk init --collect` 扫描所有平台目录，将实体 skill 收集到中央仓库并用软链接替换：
+
+1. 扫描所有平台的 global skill/agent 目录
+2. 按 `category:name` 分组，检测重复
+3. 内容相同的重复自动合并，内容不同的弹出交互菜单让用户选择
+4. 将选中版本移动到 `~/.config/agent/{category}/{name}/`
+5. 在所有出现位置创建软链接指向中央仓库
+6. 已有软链接检查指向是否正确，不正确则修复
+
+## Duplicate Detection
+
+重复检测基于 **目录名 + SKILL.md/AGENT.md 内容 SHA256 hash** 综合判定：
+
+- `sk add`: 安装前检查本地仓库是否已有同名 skill，hash 相同则跳过，不同则警告
+- `sk init --collect`: 跨平台扫描，同名同 hash 自动合并，同名不同 hash 交互选择
+- 详见 `doc/DUPLICATE_DETECTION.md`
 
 ## Environment Variables
 
@@ -128,6 +151,12 @@ sk init
   - `ModuleDetailMenu()` - 模块详情（平台多选）
   - `SelectMenu()` - 通用选择菜单
   - `ConfirmDialog()` - 确认弹窗
+  - `ConflictResolveMenu()` - 冲突解决交互菜单
+- 收集逻辑在 `lib/collect.go` 中：
+  - `ScanPlatformSkills()` - 扫描所有平台目录
+  - `GroupByName()` - 按名称分组去重
+  - `RunCollect()` - 执行完整收集流程
+  - `MoveToRepo()` / `ReplaceWithSymlink()` - 移动与链接替换
 
 ## Notes for Agents
 
